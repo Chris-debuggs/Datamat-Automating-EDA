@@ -1,0 +1,11 @@
+README.md
+setup.py
+datamat.egg-info/PKG-INFO
+datamat.egg-info/SOURCES.txt
+datamat.egg-info/dependency_links.txt
+datamat.egg-info/top_level.txt
+src/__init__.py
+src/datamat/DATAmat.py
+src/datamat/__init__.py
+src/datamat/logger.py
+src/datamat/utils.py
