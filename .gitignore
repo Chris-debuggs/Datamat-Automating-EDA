@@ -1,0 +1,5 @@
+env
+.codegpt
+.vscode
+build
+dist
