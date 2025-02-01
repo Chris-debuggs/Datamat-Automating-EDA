@@ -8,6 +8,9 @@ transformers
 accelerate
 bitsandbytes
 langchain_huggingface
+pandas
+numpy
+
 
 
 -e .
