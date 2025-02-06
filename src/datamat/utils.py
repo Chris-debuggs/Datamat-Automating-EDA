@@ -1,4 +1,17 @@
 import os
+import warnings
+import logging
+from langchain.globals import set_debug, set_verbose
+
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", "LangChainDeprecationWarning")
+logging.getLogger("langchain").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+
+set_debug(False)
+set_verbose(False)
+
 from langchain_community.llms import HuggingFaceHub
 from langchain.chains import LLMChain
 from langchain_huggingface import HuggingFaceEndpoint
@@ -18,7 +31,7 @@ def setup_qa_chain():
     llm = HuggingFaceEndpoint(
         repo_id=model_id,
         temperature=0.7,
-        token=KEY,
+        huggingfacehub_api_token=KEY,
         model_kwargs={"max_length": 128}
     )
 
