@@ -1,49 +1,50 @@
 import os
-import PyPDF2
-import json
-import traceback
+from langchain_community.llms import HuggingFaceHub
+from langchain.chains import LLMChain
+from langchain_huggingface import HuggingFaceEndpoint
+from langchain.callbacks import StdOutCallbackHandler
+from langchain.prompts import PromptTemplate
+from langchain_community.vectorstores import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.document_loaders import CSVLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains import RetrievalQA
 
-def read_file(file):
-    if file.name.endswith("pdf"):
-        try:
-            pdf_reader = PyPDF2.PdfFileReader(file)
-            text = ''
-            for page in pdf_reader.pages:  # Corrected the loop to access pages
-                text += page.extractText()
-            return text
-        
-        except Exception as e:
-            raise Exception(f"Error reading PDF file: {e}")
+def setup_qa_chain():
+    model_id = "mistralai/Mistral-7B-Instruct-v0.3"
+    KEY = "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"
     
-    elif file.name.endswith("txt"):
-        return file.read().decode("utf-8")
+    # Fixed HuggingFaceEndpoint initialization
+    llm = HuggingFaceEndpoint(
+        repo_id=model_id,
+        temperature=0.7,
+        token=KEY,
+        model_kwargs={"max_length": 128}
+    )
+
+    loader = CSVLoader("/home/voidreaper/Projects/Mini-Project/datamat/experiments/corporate_stress_dataset_formatted.csv")
+    data = loader.load()
+
+    text_spilitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text = text_spilitter.split_documents(data)
+
+    persist_directory = "db"
+    embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+
+    # Fixed Chroma initialization
+    vectordb = Chroma.from_documents(
+        documents=text,
+        embedding=embedding,  # Changed back to embedding
+        persist_directory=persist_directory
+    )
+
+    retriever = vectordb.as_retriever(search_type="similarity", search_kwargs={"k": 100})
+
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type="stuff",
+        retriever=retriever,
+        return_source_documents=False
+    )
     
-    else:
-        raise Exception("Unsupported file type")
-    
-    def get_table_data(quiz_dict): 
-    try:
-        if isinstance(quiz_dict, str):
-            quiz_dict = json.loads(quiz_dict) 
-
-        # Ensure quiz_dict is a dictionary
-        if not isinstance(quiz_dict, dict):
-            raise ValueError("Input should be a dictionary or a valid JSON string representing a dictionary.")
-
-        quiz_table_data = []
-
-        for key, value in quiz_dict.items():  # Expecting a dictionary directly
-            mcq = value["mcq"]
-            options = "  ||  ".join(
-                [
-                    f"{option} -> {option_value}" for option, option_value in value["options"].items()
-                ]
-            )
-            correct = value["correct"]
-            quiz_table_data.append({"MCQ": mcq, "Choices": options, "Correct": correct})
-
-        return quiz_table_data
-
-    except Exception as e:
-        traceback.print_exception(type(e), e, e.__traceback__)
-        return []
+    return qa_chain
