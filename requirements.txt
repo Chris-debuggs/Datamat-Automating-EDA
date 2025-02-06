@@ -1,15 +1,18 @@
-langchain
-streamlit
-python-dotenv
-PyPDF2
-langchain_community
-torch
-transformers
-accelerate
-bitsandbytes
-langchain_huggingface
-pandas
-numpy
+langchain==0.1.0
+streamlit==1.32.0
+python-dotenv==1.0.0
+PyPDF2==3.0.1
+langchain-community==0.0.21
+torch>=2.2.0
+transformers==4.38.2
+accelerate==0.27.2
+bitsandbytes==0.41.3
+langchain-huggingface==0.0.8
+pandas==2.2.1
+numpy==1.26.4
+fastapi==0.110.0
+pydantic==2.6.3
+uvicorn==0.27.1
 
 
 
