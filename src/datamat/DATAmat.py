@@ -7,5 +7,5 @@ while True:
     user_input = input(f"Input Prompt:")
     if user_input == "exit":
         sys.exit()
-    result = qa_chain({"query": user_input})
+    result = qa_chain.invoke({"query": user_input})
     print(result["result"])
