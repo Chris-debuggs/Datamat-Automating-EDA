@@ -23,7 +23,14 @@ from langchain_community.document_loaders import CSVLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
 
+# Make qa_chain global so we don't recreate it for every request
+qa_chain = None
+
 def setup_qa_chain():
+    global qa_chain
+    if qa_chain is not None:
+        return qa_chain
+        
     model_id = "mistralai/Mistral-7B-Instruct-v0.3"
     KEY = "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"
     
@@ -47,7 +54,7 @@ def setup_qa_chain():
     # Fixed Chroma initialization
     vectordb = Chroma.from_documents(
         documents=text,
-        embedding=embedding,  # Changed back to embedding
+        embedding=embedding, 
         persist_directory=persist_directory
     )
 
