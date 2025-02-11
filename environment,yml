@@ -1,0 +1,32 @@
+name: datamat
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.9
+  - pip
+  - pytorch
+  - pandas
+  - numpy
+  - pip:
+    - langchain
+    - streamlit
+    - python-dotenv
+    - PyPDF2
+    - langchain-community
+    - transformers
+    - accelerate
+    - bitsandbytes
+    - langchain-huggingface
+    - fastapi
+    - pydantic
+    - uvicorn
+    - aiohttp
+    - aiofiles
+    - requests
+    - python-multipart
+    - certifi
+    - uuid
+    - chromadb
+    - -e . 
