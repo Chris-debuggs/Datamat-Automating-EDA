@@ -6,3 +6,5 @@ dist
 db
 __pycache__
 chroma_db
+log
+.env
