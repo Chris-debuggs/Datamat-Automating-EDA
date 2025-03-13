@@ -9,3 +9,4 @@ chroma_db
 log
 .env
 experiments/exploratory_data_analysis.ipynb
+datasets
