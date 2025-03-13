@@ -30,14 +30,16 @@ set_verbose(False)
 
 def delete_vector_db(persist_directory):
     """
-    Delete the existing vector database if it exists
+    Force delete the existing vector database if it exists
     """
     if os.path.exists(persist_directory):
         try:
-            shutil.rmtree(persist_directory)
-            print(f"Deleted existing vector database at {persist_directory}")
+            shutil.rmtree(persist_directory, ignore_errors=True)  # Ignores permission errors
+            os.makedirs(persist_directory, exist_ok=True)  # Recreate the directory
+            print(f"Deleted and recreated vector database at {persist_directory}")
         except Exception as e:
             print(f"Error deleting vector database: {e}")
+
 
 def setup_qa_chain(force_reload=False):
     """
@@ -48,19 +50,20 @@ def setup_qa_chain(force_reload=False):
 
     # Force reload or no existing chain
     if force_reload or qa_chain is None:
-        model_id = "mistralai/Mistral-7B-Instruct-v0.3"  # Or any other suitable model
+        model_id = "meta-llama/Llama-3.2-3B-Instruct"  # Or any other suitable model
 
         try:
             # Load the model locally.  This might take a considerable amount of time and disk space.
-            tokenizer = AutoTokenizer.from_pretrained(model_id)
-            model = AutoModelForCausalLM.from_pretrained(model_id)
+            tokenizer = AutoTokenizer.from_pretrained(model_id,device_map ="cpu")
+            model = AutoModelForCausalLM.from_pretrained(model_id,device_map ="cpu")
             
             # Create a pipeline
             pipe = pipeline(
                 "text-generation",
                 model=model,
                 tokenizer=tokenizer,
-                max_length=128,
+                max_length=3500,
+                max_new_tokens=500,
                 temperature=0.7
             )
 
