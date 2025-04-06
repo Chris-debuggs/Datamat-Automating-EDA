@@ -120,35 +120,65 @@ async def health_check():
 async def download_kaggle_dataset(dataset: KaggleDatasetDownload):
     """Download a dataset from Kaggle."""
     try:
+        # Check for Kaggle credentials
         kaggle_dir = Path.home() / '.kaggle'
-        if not (kaggle_dir / 'kaggle.json').exists():
+        kaggle_cred_file = kaggle_dir / 'kaggle.json'
+        
+        if not kaggle_dir.exists():
+            kaggle_dir.mkdir(parents=True)
             raise HTTPException(
                 status_code=400,
-                detail="Kaggle API credentials not found."
+                detail="Kaggle directory not found. Please create ~/.kaggle directory"
+            )
+            
+        if not kaggle_cred_file.exists():
+            raise HTTPException(
+                status_code=400,
+                detail="Kaggle API credentials not found. Please place kaggle.json in ~/.kaggle/"
             )
 
-        download_path = DOWNLOAD_DIR / "kaggle"
-        download_path.mkdir(exist_ok=True)
+        # Validate dataset name format
+        if "/" not in dataset.dataset_name:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid dataset name format. Use 'username/dataset-name'"
+            )
 
-        kaggle.api.dataset_download_files(
-            dataset.dataset_name,
-            path=str(download_path),
-            unzip=True
-        )
+        download_path = DOWNLOAD_DIR / "kaggle" / dataset.dataset_name.replace("/", "_")
+        download_path.mkdir(parents=True, exist_ok=True)
+
+        try:
+            kaggle.api.dataset_download_files(
+                dataset.dataset_name,
+                path=str(download_path),
+                unzip=True
+            )
+        except Exception as kaggle_error:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Kaggle API error: {str(kaggle_error)}"
+            )
 
         downloaded_files = list(download_path.glob('*'))
         if not downloaded_files:
-            raise Exception("No files were downloaded")
+            raise HTTPException(
+                status_code=500,
+                detail="No files were downloaded from Kaggle"
+            )
 
+        # Reload QA chain only if files were successfully downloaded
         global qa_chain
         qa_chain = setup_qa_chain(force_reload=True)
 
         return {
             "message": "Kaggle dataset downloaded successfully",
+            "dataset": dataset.dataset_name,
             "files": [str(f.name) for f in downloaded_files],
             "download_path": str(download_path)
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error downloading Kaggle dataset: {str(e)}")
 

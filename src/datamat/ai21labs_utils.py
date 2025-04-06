@@ -9,7 +9,13 @@ from langchain_ai21 import ChatAI21
 from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.document_loaders import CSVLoader
+from langchain_community.document_loaders import (
+    CSVLoader,
+    PyPDFLoader,
+    JSONLoader,
+    TextLoader,
+    UnstructuredExcelLoader
+)
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 dotenv.load_dotenv()
@@ -33,6 +39,25 @@ def delete_vector_db(persist_directory):
             print(f"Error deleting vector database: {e}")
 
 
+def get_loader_for_file(file_path: Path):
+    """Return appropriate loader based on file extension."""
+    extension = file_path.suffix.lower()
+    
+    loaders = {
+        '.csv': lambda f: CSVLoader(str(f)),
+        '.pdf': lambda f: PyPDFLoader(str(f)),
+        '.json': lambda f: JSONLoader(str(f), jq_schema='.', text_content=False),
+        '.txt': lambda f: TextLoader(str(f)),
+        '.xlsx': lambda f: UnstructuredExcelLoader(str(f)),
+        '.xls': lambda f: UnstructuredExcelLoader(str(f))
+    }
+    
+    loader_func = loaders.get(extension)
+    if not loader_func:
+        raise ValueError(f"Unsupported file type: {extension}")
+    
+    return loader_func(file_path)
+
 def setup_qa_chain(force_reload=False):
     """
     Setup the QA chain with the latest dataset using AI21 Labs.
@@ -52,13 +77,18 @@ def setup_qa_chain(force_reload=False):
             logger.error("Datasets directory not found")
             raise Exception("No datasets directory found")
         
-        # Get latest dataset
-        csv_files = list(datasets_dir.glob("*.csv"))
-        if not csv_files:
-            logger.error("No CSV files found in datasets directory")
-            raise Exception("No CSV files found in datasets directory")
+        # Search for supported files recursively
+        supported_extensions = ('.csv', '.pdf', '.json', '.txt', '.xlsx', '.xls')
+        all_files = []
+        for ext in supported_extensions:
+            all_files.extend(datasets_dir.rglob(f"*{ext}"))
         
-        latest_dataset = max(csv_files, key=lambda x: x.stat().st_mtime)
+        if not all_files:
+            logger.error("No supported files found in datasets directory or its subdirectories")
+            raise Exception("No supported files found")
+        
+        # Get latest dataset across all subdirectories
+        latest_dataset = max(all_files, key=lambda x: x.stat().st_mtime)
         logger.info(f"Selected dataset: {latest_dataset}")
         
         # Database directory
@@ -73,10 +103,13 @@ def setup_qa_chain(force_reload=False):
             max_tokens=512
         )
 
-
-        # Load & split dataset
-        loader = CSVLoader(str(latest_dataset))
-        data = loader.load()
+        # Load & split dataset using appropriate loader
+        try:
+            loader = get_loader_for_file(latest_dataset)
+            data = loader.load()
+        except Exception as e:
+            logger.error(f"Error loading file: {str(e)}")
+            raise
 
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         text = text_splitter.split_documents(data)
