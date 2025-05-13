@@ -98,7 +98,7 @@ def setup_qa_chain(force_reload=False):
         # Initialize AI21 Labs LLM
         llm = ChatAI21(
             api_key=os.getenv("AI21_API_KEY"),
-            model="jamba-instruct",  # ✅ Explicitly add `model`
+            model="jamba-large-1.6-2025-03",  # ✅ Explicitly add `model`
             temperature=0.7,
             max_tokens=512
         )
