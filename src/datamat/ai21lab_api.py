@@ -166,7 +166,6 @@ async def download_kaggle_dataset(dataset: KaggleDatasetDownload):
                 detail="No files were downloaded from Kaggle"
             )
 
-        # Reload QA chain only if files were successfully downloaded
         global qa_chain
         qa_chain = setup_qa_chain(force_reload=True)
 
