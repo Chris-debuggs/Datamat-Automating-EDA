@@ -41,8 +41,22 @@ app.add_middleware(
 DOWNLOAD_DIR = Path("datasets")
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
-# Initialize QA chain
-qa_chain = setup_qa_chain()
+# Initialize QA chain lazily (will be set when first dataset is uploaded)
+qa_chain = None
+
+def get_or_init_qa_chain():
+    """Get the QA chain, initializing it if it doesn't exist."""
+    global qa_chain
+    if qa_chain is None:
+        try:
+            qa_chain = setup_qa_chain()
+        except Exception as e:
+            logger.error(f"Failed to initialize QA chain: {str(e)}")
+            raise HTTPException(
+                status_code=503,
+                detail=f"QA chain not initialized. Please upload a dataset first. Error: {str(e)}"
+            )
+    return qa_chain
 
 class Query(BaseModel):
     question: str
@@ -59,8 +73,11 @@ class KaggleDatasetDownload(BaseModel):
 async def ask_question(query: Query):
     """Endpoint to ask questions using AI21 Labs LLM."""
     try:
-        result = qa_chain.invoke({"query": query.question})
+        chain = get_or_init_qa_chain()
+        result = chain.invoke({"query": query.question})
         return {"answer": result["result"]}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
 
@@ -77,7 +94,14 @@ async def upload_dataset(file: UploadFile = File(...)):
             shutil.copyfileobj(file.file, buffer)
 
         global qa_chain
-        qa_chain = setup_qa_chain(force_reload=True)
+        try:
+            qa_chain = setup_qa_chain(force_reload=True)
+        except Exception as e:
+            logger.error(f"Failed to setup QA chain after upload: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"File uploaded but failed to initialize QA chain: {str(e)}"
+            )
 
         return {
             "message": "Dataset uploaded and processed successfully",
@@ -167,7 +191,14 @@ async def download_kaggle_dataset(dataset: KaggleDatasetDownload):
             )
 
         global qa_chain
-        qa_chain = setup_qa_chain(force_reload=True)
+        try:
+            qa_chain = setup_qa_chain(force_reload=True)
+        except Exception as e:
+            logger.error(f"Failed to setup QA chain after upload: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"File uploaded but failed to initialize QA chain: {str(e)}"
+            )
 
         return {
             "message": "Kaggle dataset downloaded successfully",
