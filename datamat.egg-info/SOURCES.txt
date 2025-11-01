@@ -3,9 +3,15 @@ setup.py
 datamat.egg-info/PKG-INFO
 datamat.egg-info/SOURCES.txt
 datamat.egg-info/dependency_links.txt
+datamat.egg-info/requires.txt
 datamat.egg-info/top_level.txt
 src/__init__.py
 src/datamat/DATAmat.py
 src/datamat/__init__.py
+src/datamat/ai21lab_api.py
+src/datamat/ai21labs_utils.py
+src/datamat/api.py
 src/datamat/logger.py
+src/datamat/logging_config.py
+src/datamat/main.py
 src/datamat/utils.py
